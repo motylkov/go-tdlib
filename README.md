@@ -42,11 +42,31 @@ If hit any build errors, refer to [Tdlib build instructions](https://github.com/
 I'm using static linking against tdlib so it won't require to build the whole tdlib source files.
 
 ## Docker
-You can use prebuilt tdlib with following Docker image: 
+You can use the prebuilt tdlib image and Go image of your liking:
 
-***Windows:***
-``` shell
-docker pull mihaildemidoff/tdlib-go
+```
+FROM golang:1.15-alpine AS golang
+
+COPY --from=wcsiu/tdlib:1.7-alpine /usr/local/include/td /usr/local/include/td
+COPY --from=wcsiu/tdlib:1.7-alpine /usr/local/lib/libtd* /usr/local/lib/
+COPY --from=wcsiu/tdlib:1.7-alpine /usr/lib/libssl.a /usr/local/lib/libssl.a
+COPY --from=wcsiu/tdlib:1.7-alpine /usr/lib/libcrypto.a /usr/local/lib/libcrypto.a
+COPY --from=wcsiu/tdlib:1.7-alpine /lib/libz.a /usr/local/lib/libz.a
+RUN apk add build-base
+
+WORKDIR /myApp
+
+COPY . .
+
+RUN go build --ldflags "-extldflags '-static -L/usr/local/lib -ltdjson_static -ltdjson_private -ltdclient -ltdcore -ltdactor -ltddb -ltdsqlite -ltdnet -ltdutils -ldl -lm -lssl -lcrypto -lstdc++ -lz'" -o /tmp/getChats getChats.go
+
+FROM gcr.io/distroless/base:latest
+COPY --from=golang /tmp/getChats /getChats
+ENTRYPOINT [ "/getChats" ]
+```
+
+```
+$ docker build -fDockerfile -ttelegram-client .
 ```
 
 ## Example
@@ -144,7 +164,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="https://github.com/KarimNahas"><img src="https://avatars3.githubusercontent.com/u/15736459?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Karim Nahas</b></sub></a><br /><a href="https://github.com/Arman92/go-tdlib/commits?author=KarimNahas" title="Code">💻</a> <a href="#maintenance-KarimNahas" title="Maintenance">🚧</a> <a href="https://github.com/Arman92/go-tdlib/issues?q=author%3AKarimNahas" title="Bug reports">🐛</a></td>
   </tr>
   <tr>
-    <td align="center"><a href="https://github.com/wcsiu"><img src="https://avatars0.githubusercontent.com/u/5212960?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Wachiu Siu</b></sub></a><br /><a href="#example-wcsiu" title="Examples">💡</a> <a href="https://github.com/Arman92/go-tdlib/issues?q=author%3Awcsiu" title="Bug reports">🐛</a></td>
+    <td align="center"><a href="https://github.com/wcsiu"><img src="https://avatars0.githubusercontent.com/u/5212960?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Wachiu Siu</b></sub></a><br /><a href="#example-wcsiu" title="Examples">💡</a> <a href="https://github.com/Arman92/go-tdlib/issues?q=author%3Awcsiu" title="Bug reports">🐛</a> <a href="https://github.com/Arman92/go-tdlib/commits?author=wcsiu" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/motylkov"><img src="https://avatars1.githubusercontent.com/u/1659182?v=4?s=100" width="100px;" alt=""/><br /><sub><b>motylkov</b></sub></a><br /><a href="https://github.com/Arman92/go-tdlib/commits?author=motylkov" title="Code">💻</a></td>
   </tr>
 </table>
